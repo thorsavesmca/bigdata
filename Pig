@@ -1,0 +1,89 @@
+========================================
+========================================
+**********   PIG COMPLETE NOTES   **********
+========================================
+========================================
+
+HOW TO START PIG:
+1. Open Terminal
+2. Run:
+pig
+You will get: grunt>
+
+----------------------------------------
+1. LOAD DATA (Pig Latin Basics)
+----------------------------------------
+data = LOAD '/pigdata/student.txt'
+USING PigStorage(',')
+AS (id:int, name:chararray, marks:int, city:chararray);
+
+DUMP data;
+
+----------------------------------------
+2. PIG DATA TYPES
+----------------------------------------
+int
+long
+float
+double
+chararray
+bytearray
+tuple
+bag
+map
+
+----------------------------------------
+3. DOWNLOAD / CREATE DATA
+----------------------------------------
+Create file:
+gedit student.txt
+
+Upload to HDFS:
+hdfs dfs -mkdir /pigdata
+hdfs dfs -put student.txt /pigdata
+
+----------------------------------------
+4. CREATE SCRIPT
+----------------------------------------
+gedit student.pig
+
+SCRIPT CONTENT:
+student = LOAD '/pigdata/student.txt' USING PigStorage(',') AS (id:int,name:chararray,marks:int,city:chararray);
+high = FILTER student BY marks > 80;
+DUMP high;
+
+----------------------------------------
+5. EXECUTE SCRIPT
+----------------------------------------
+pig student.pig
+
+----------------------------------------
+6. PIG OPERATIONS
+----------------------------------------
+
+DIAGNOSTIC OPERATORS:
+DESCRIBE student;
+ILLUSTRATE student;
+DUMP student;
+
+FILTER:
+filtered = FILTER student BY marks > 80;
+
+GROUP:
+grp = GROUP student BY city;
+
+FOREACH + GROUP:
+results = FOREACH grp GENERATE group, AVG(student.marks);
+
+JOIN:
+dept = LOAD '/pigdata/dept.txt' USING PigStorage(',') AS (id:int, dept:chararray);
+joined = JOIN student BY id, dept BY id;
+
+UNION:
+u = UNION data1, data2;
+
+SPLIT:
+SPLIT student INTO pass IF marks>40, fail IF marks<=40;
+
+SORT:
+sorted = ORDER student BY marks DESC;
