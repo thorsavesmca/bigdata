@@ -1,0 +1,346 @@
+Nice — here you go: **plain, copy-paste–ready NOTEPAD text** for **MongoDB** (install/start + all common commands & examples) **and** a clear **HDFS commands cheat-sheet** (mkdir, touchz, put/get, move, cp, rm, du, dus, stat, etc.). No extra fluff — exactly like your previous notes.
+
+# ========================================
+
+# **********   MONGODB COMPLETE NOTES   **********
+
+========================================
+
+WHERE TO RUN:
+
+* Local machine (Linux/Windows/Mac) after installing MongoDB.
+* Docker container.
+* MongoDB Atlas (cloud) — connect via connection string.
+* In Cloudera VM you won't have MongoDB by default; use Docker or install locally.
+
+HOW TO START MONGODB (Linux systemd):
+
+* Install following official docs (apt/yum).
+* Start service:
+  sudo systemctl start mongod
+* Enable on boot:
+  sudo systemctl enable mongod
+* Check status:
+  sudo systemctl status mongod
+=================================================
+YAHA SE START GUYS
+============================================================================
+START USING SHELL:
+
+* New shell (mongosh recommended):
+  mongosh
+* Or legacy shell:
+  mongo
+* Prompt looks like:
+
+>
+
+DO BASIC NAVIGATION:
+
+* Show databases:
+  show dbs
+* Use / switch database:
+  use mydb
+* Show current DB:
+  db
+* Show collections:
+  show collections
+
+CREATE / INSERT DOCUMENTS:
+
+* Insert one:
+  db.students.insertOne({ _id:1, name:"Vedang", age:22, marks:85, dept:"CS" })
+* Insert many:
+  db.students.insertMany([
+  { _id:2, name:"Raj", age:21, marks:90 },
+  { _id:3, name:"Asha", age:23, marks:70 }
+  ])
+
+BASIC QUERIES:
+
+* Find all:
+  db.students.find()
+* Pretty-print:
+  db.students.find().pretty()
+* Find with condition:
+  db.students.find({marks:{$gt:80}})
+* Projection (select fields):
+  db.students.find({marks:{$gt:80}}, {name:1, marks:1, _id:0})
+* Count:
+  db.students.countDocuments({marks:{$gt:80}})
+
+UPDATE DOCUMENTS:
+
+* Update one (set):
+  db.students.updateOne({ _id:1 }, { $set: { marks:88 } })
+* Update many:
+  db.students.updateMany({ dept:"CS" }, { $inc: { marks:5 } })
+* Replace document:
+  db.students.replaceOne({ _id:2 }, { _id:2, name:"Raj", marks:95, dept:"IT" })
+
+DELETE DOCUMENTS:
+
+* Delete one:
+  db.students.deleteOne({ _id:3 })
+* Delete many:
+  db.students.deleteMany({ marks: { $lt:50 } })
+* Drop collection:
+  db.students.drop()
+
+INDEXES:
+
+* Create index on field:
+  db.students.createIndex({ name:1 })   // ascending
+* Create compound index:
+  db.students.createIndex({ dept:1, marks:-1 })
+* List indexes:
+  db.students.getIndexes()
+* Drop index:
+  db.students.dropIndex("name_1")
+
+AGGREGATION (basic):
+
+* Group & average marks by dept:
+  db.students.aggregate([
+  { $group: { _id: "$dept", avgMarks: { $avg: "$marks" }, count: { $sum:1 } } },
+  { $sort: { avgMarks: -1 } }
+  ])
+* Match + project example:
+  db.students.aggregate([
+  { $match: { marks: { $gte: 70 } } },
+  { $project: { name:1, marks:1, _id:0 } }
+  ])
+
+USER MANAGEMENT / AUTH (basic):
+
+* Switch to admin:
+  use admin
+* Create admin user:
+  db.createUser({
+  user: "admin",
+  pwd: "StrongPass123",
+  roles: [ { role: "userAdminAnyDatabase", db: "admin" }, "readWriteAnyDatabase" ]
+  })
+* Create DB-specific user:
+  use college
+  db.createUser({ user:"prof", pwd:"profpass", roles:[{role:"readWrite", db:"college"}] })
+
+BACKUP & RESTORE:
+
+* Dump one DB:
+  mongodump --db college --out /tmp/backup
+* Dump all:
+  mongodump --out /tmp/alldump
+* Restore:
+  mongorestore --db college --drop /tmp/backup/college
+
+IMPORT / EXPORT (JSON/CSV):
+
+* Import JSON:
+  mongoimport --db college --collection students --file students.json --jsonArray
+* Import CSV:
+  mongoimport --db college --collection students --type csv --headerline --file students.csv
+* Export JSON:
+  mongoexport --db college --collection students --out students.json --jsonArray
+* Export CSV:
+  mongoexport --db college --collection students --type=csv --fields name,marks,dept --out students.csv
+
+REPLICA SET (quick single-node for dev):
+
+* Start mongod with replSet:
+  mongod --replSet rs0 --dbpath /data/db --port 27017
+* In mongosh:
+  rs.initiate()
+  rs.status()
+
+SECURITY & AUTH:
+
+* To enable auth, edit /etc/mongod.conf: security.authorization: "enabled"
+* Restart mongod, then connect with user credentials:
+  mongosh -u admin -p StrongPass123 --authenticationDatabase admin
+
+USEFUL DB / SERVER COMMANDS:
+
+* Show DB stats:
+  db.stats()
+* Show collection stats:
+  db.students.stats()
+* Server status:
+  db.serverStatus()
+* Current Ops:
+  db.currentOp()
+
+TIPS:
+
+* Use indexes for filter fields used often.
+* For large imports prefer --numInsertionWorkers or mongoimport options.
+* Use aggregation framework for GROUP/REDUCE style analytics.
+* For production use Replica Sets + backups + authentication.
+
+# ========================================
+
+# **********   HDFS COMMANDS CHEAT-SHEET   **********
+
+========================================
+
+WHERE TO RUN:
+
+* On Hadoop client node or Cloudera VM terminal.
+* Prefix used below can be either:
+  hdfs dfs -COMMAND  OR  hadoop fs -COMMAND
+  (Use whichever your cluster supports; both are common)
+
+LIST / NAVIGATION:
+
+* List files:
+  hdfs dfs -ls /path
+* Recursive list:
+  hdfs dfs -ls -R /path
+* List with human readable sizes (if supported):
+  hdfs dfs -ls -h /path
+
+MKDIR:
+
+* Make directory in HDFS:
+  hdfs dfs -mkdir /user/cloudera/mydir
+* Make parents:
+  hdfs dfs -mkdir -p /user/cloudera/mydir/sub
+
+TOUCHZ (create zero-length file):
+
+* Create empty file:
+  hdfs dfs -touchz /user/cloudera/mydir/emptyfile.txt
+
+COPY FROM LOCAL / PUT:
+
+* Copy file(s) from local FS to HDFS (creates target):
+  hdfs dfs -put /home/cloudera/student.txt /user/cloudera/mydir/
+* Equivalent:
+  hdfs dfs -copyFromLocal /home/cloudera/student.txt /user/cloudera/mydir/
+
+COPY TO LOCAL / GET:
+
+* Copy from HDFS to local:
+  hdfs dfs -get /user/cloudera/mydir/student.txt /home/cloudera/
+* Equivalent:
+  hdfs dfs -copyToLocal /user/cloudera/mydir/student.txt /home/cloudera/
+
+MOVE FROM LOCAL:
+
+* Move local file into HDFS (deletes local copy):
+  hdfs dfs -moveFromLocal /home/cloudera/student.txt /user/cloudera/mydir/
+
+CP (copy within HDFS):
+
+* Copy file/dir inside HDFS:
+  hdfs dfs -cp /user/cloudera/mydir/student.txt /user/cloudera/mydir/copy_student.txt
+
+RM / RMR (remove):
+
+* Remove a file:
+  hdfs dfs -rm /user/cloudera/mydir/student.txt
+* Remove directory recursively:
+  hdfs dfs -rm -r /user/cloudera/mydir/subdir
+* Force delete (skip trash) / non-interactive:
+  hdfs dfs -rm -skipTrash -r /user/cloudera/mydir
+
+DU (disk usage) and DUS:
+
+* Show size of file(s):
+  hdfs dfs -du /user/cloudera/mydir
+* Human readable (if supported):
+  hdfs dfs -du -h /user/cloudera/mydir
+* Summary (disk usage summary for a directory):
+  hdfs dfs -dus /user/cloudera/mydir
+* Human readable summary:
+  hdfs dfs -dus -h /user/cloudera/mydir
+
+STAT:
+
+* Show file/directory detailed info:
+  hdfs dfs -stat %n\ %b\ %y /user/cloudera/mydir/student.txt
+  // %n name, %b blocksize, %y modification time (format codes vary)
+* Or simpler:
+  hdfs dfs -ls -t /user/cloudera/mydir/student.txt
+
+CAT / TEXT VIEW:
+
+* View file contents:
+  hdfs dfs -cat /user/cloudera/mydir/student.txt
+* Head (first N bytes/lines):
+  hdfs dfs -cat /user/cloudera/mydir/student.txt | head -n 20
+* Tail (last lines) [use streaming]:
+  hdfs dfs -tail /user/cloudera/mydir/student.txt
+
+GETMERG E (merge files from HDFS to local single file):
+
+* Merge all files in HDFS dir into a single local file:
+  hdfs dfs -getmerge /user/cloudera/mydir /home/cloudera/merged.txt
+* Note: getmerge is deprecated in some distros; use hdfs dfs -cat dir/* > localfile
+
+TEXT PERMISSIONS / OWNERSHIP:
+
+* Change permissions:
+  hdfs dfs -chmod 755 /user/cloudera/mydir
+* Change owner:
+  hdfs dfs -chown cloudera:cloudera /user/cloudera/mydir
+
+RENAME / MOVE (within HDFS):
+
+* Rename or move:
+  hdfs dfs -mv /user/cloudera/mydir/file1 /user/cloudera/mydir/file2
+
+COUNT FILES:
+
+* Count files, dirs and bytes:
+  hdfs dfs -count /user/cloudera/mydir
+* With human readable (if supported):
+  hdfs dfs -count -h /user/cloudera/mydir
+
+CHECKSUM:
+
+* Get checksum of file:
+  hdfs dfs -checksum /user/cloudera/mydir/student.txt
+
+SET REPLICATION:
+
+* Set replication factor for file:
+  hdfs dfs -setrep -w 3 /user/cloudera/mydir/student.txt
+
+EXAMPLES (common workflows):
+
+1. Create dir, upload file, list, view:
+   hdfs dfs -mkdir -p /user/cloudera/pigdata
+   hdfs dfs -put /home/cloudera/student.txt /user/cloudera/pigdata/
+   hdfs dfs -ls /user/cloudera/pigdata
+   hdfs dfs -cat /user/cloudera/pigdata/student.txt
+
+2. Copy all CSVs from local to HDFS:
+   hdfs dfs -mkdir -p /user/cloudera/csvs
+   hdfs dfs -put /home/cloudera/*.csv /user/cloudera/csvs/
+
+3. Move local file (delete local after move):
+   hdfs dfs -moveFromLocal /home/cloudera/log.txt /user/cloudera/logs/
+
+4. Delete directory recursively:
+   hdfs dfs -rm -r /user/cloudera/old_data
+
+5. Check space used by user dir:
+   hdfs dfs -dus /user/cloudera
+
+6. Merge many small part files into one local file:
+   hdfs dfs -getmerge /user/cloudera/output /home/cloudera/output_merged.txt
+
+TROUBLESHOOTING / TIPS:
+
+* If permission denied, check HDFS file/dir owner and permissions.
+* If command fails, ensure NameNode & DataNode services are up (use Cloudera Manager).
+* Use -skipTrash to permanently remove without moving to Trash.
+* For very large copy operations, prefer hdfs dfs -put to avoid local disk space issues.
+* Use -test -e /path to test existence: hdfs dfs -test -e /user/cloudera/mydir && echo "exists"
+
+========================================
+=========  END OF NOTEPAD NOTES  =========
+==========================================
+
+Want these combined into a single PDF or DOCX now? Or do you want ready-made sample files (students.json, students.csv, student.pig) that you can directly upload to HDFS?
